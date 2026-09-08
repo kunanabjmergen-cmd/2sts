@@ -1,0 +1,418 @@
+```html
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartTeam — Планировщик студента</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f3f5f9;
+            color: #222;
+        }
+
+        header {
+            background: #ffffff;
+            padding: 20px 40px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+
+        header p {
+            margin: 5px 0 0;
+            color: #777;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .add-task {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+            margin-bottom: 25px;
+        }
+
+        .add-task h2 {
+            margin-top: 0;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 13px;
+            margin-top: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 7px;
+            font-size: 15px;
+        }
+
+        label {
+            font-weight: bold;
+        }
+
+        #addButton {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 7px;
+            background: #222;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        #addButton:hover {
+            background: #444;
+        }
+
+        .statistics {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat {
+            flex: 1;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.06);
+        }
+
+        .stat strong {
+            display: block;
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+
+        .tasks {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+        }
+
+        .task {
+            border: 1px solid #ddd;
+            border-radius: 9px;
+            padding: 17px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .task:last-child {
+            margin-bottom: 0;
+        }
+
+        .task input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin: 0;
+        }
+
+        .task-info {
+            flex: 1;
+        }
+
+        .task-title {
+            font-size: 17px;
+            font-weight: bold;
+        }
+
+        .task-date {
+            margin-top: 6px;
+            color: #777;
+            font-size: 14px;
+        }
+
+        .priority {
+            padding: 6px 10px;
+            border-radius: 20px;
+            font-size: 13px;
+        }
+
+        .high {
+            background: #ffd6d6;
+        }
+
+        .medium {
+            background: #fff0bd;
+        }
+
+        .low {
+            background: #d8f5dc;
+        }
+
+        .completed .task-title {
+            text-decoration: line-through;
+            color: #999;
+        }
+
+        .empty {
+            text-align: center;
+            color: #888;
+            padding: 25px;
+        }
+
+        @media (max-width: 600px) {
+            .statistics {
+                flex-direction: column;
+            }
+
+            header {
+                padding: 20px;
+            }
+
+            .container {
+                margin-top: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h1>SmartTeam</h1>
+    <p>Планировщик задач студента</p>
+</header>
+
+<div class="container">
+
+    <div class="add-task">
+        <h2>Добавить задачу</h2>
+
+        <label>Название задания</label>
+        <input
+            type="text"
+            id="taskInput"
+            placeholder="Например: Сделать лабораторную работу"
+        >
+
+        <label>Дата выполнения</label>
+        <input type="date" id="dateInput">
+
+        <label>Приоритет</label>
+        <select id="priorityInput">
+            <option value="high">Высокий</option>
+            <option value="medium">Средний</option>
+            <option value="low">Низкий</option>
+        </select>
+
+        <button id="addButton">Добавить задачу</button>
+    </div>
+
+
+    <div class="statistics">
+
+        <div class="stat">
+            <strong id="totalTasks">0</strong>
+            Всего задач
+        </div>
+
+        <div class="stat">
+            <strong id="completedTasks">0</strong>
+            Выполнено
+        </div>
+
+        <div class="stat">
+            <strong id="remainingTasks">0</strong>
+            Осталось
+        </div>
+
+    </div>
+
+
+    <div class="tasks">
+
+        <h2>Мои задачи</h2>
+
+        <div id="taskList">
+            <div class="empty">
+                Пока нет задач
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+    let tasks = [];
+
+    const taskInput = document.getElementById("taskInput");
+    const dateInput = document.getElementById("dateInput");
+    const priorityInput = document.getElementById("priorityInput");
+    const addButton = document.getElementById("addButton");
+    const taskList = document.getElementById("taskList");
+
+    const totalTasks = document.getElementById("totalTasks");
+    const completedTasks = document.getElementById("completedTasks");
+    const remainingTasks = document.getElementById("remainingTasks");
+
+
+    addButton.addEventListener("click", function () {
+
+        const title = taskInput.value.trim();
+        const date = dateInput.value;
+        const priority = priorityInput.value;
+
+        if (title === "") {
+            alert("Введите название задания!");
+            return;
+        }
+
+        const task = {
+            id: Date.now(),
+            title: title,
+            date: date,
+            priority: priority,
+            completed: false
+        };
+
+        tasks.push(task);
+
+        taskInput.value = "";
+        dateInput.value = "";
+
+        renderTasks();
+
+    });
+
+
+    function renderTasks() {
+
+        taskList.innerHTML = "";
+
+        if (tasks.length === 0) {
+
+            taskList.innerHTML = `
+                <div class="empty">
+                    Пока нет задач
+                </div>
+            `;
+
+            updateStatistics();
+            return;
+        }
+
+
+        tasks.forEach(function (task) {
+
+            const taskElement = document.createElement("div");
+
+            taskElement.className = "task";
+
+            if (task.completed) {
+                taskElement.classList.add("completed");
+            }
+
+
+            let priorityText = "";
+
+            if (task.priority === "high") {
+                priorityText = "Высокий";
+            }
+
+            if (task.priority === "medium") {
+                priorityText = "Средний";
+            }
+
+            if (task.priority === "low") {
+                priorityText = "Низкий";
+            }
+
+
+            taskElement.innerHTML = `
+
+                <input
+                    type="checkbox"
+                    ${task.completed ? "checked" : ""}
+                    onchange="completeTask(${task.id})"
+                >
+
+                <div class="task-info">
+
+                    <div class="task-title">
+                        ${task.title}
+                    </div>
+
+                    <div class="task-date">
+                        ${task.date ? "Срок: " + task.date : "Дата не указана"}
+                    </div>
+
+                </div>
+
+                <div class="priority ${task.priority}">
+                    ${priorityText}
+                </div>
+
+            `;
+
+            taskList.appendChild(taskElement);
+
+        });
+
+        updateStatistics();
+    }
+
+
+    function completeTask(id) {
+
+        const task = tasks.find(function (task) {
+            return task.id === id;
+        });
+
+        if (task) {
+            task.completed = !task.completed;
+        }
+
+        renderTasks();
+    }
+
+
+    function updateStatistics() {
+
+        const total = tasks.length;
+
+        const completed = tasks.filter(function (task) {
+            return task.completed;
+        }).length;
+
+        const remaining = total - completed;
+
+        totalTasks.textContent = total;
+        completedTasks.textContent = completed;
+        remainingTasks.textContent = remaining;
+    }
+
+
+    renderTasks();
+
+</script>
+
+</body>
+</html>
+```
